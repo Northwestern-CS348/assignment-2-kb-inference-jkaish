@@ -1,0 +1,3 @@
+fact: (isa Spongebob Sponge)
+
+rule: ((isa ?x Sponge)) -> (square ?x)

@@ -128,6 +128,28 @@ class KnowledgeBase(object):
         printv("Retracting {!r}", 0, verbose, [fact_or_rule])
         ####################################################
         # Student code goes here
+        if factq(fact_or_rule):
+            f = self._get_fact(fact_or_rule)
+            if f.asserted:
+                for supported_fact in f.supports_facts:
+                    f_index = supported_fact.supported_by.index(f)
+                    f_to_remove = supported_fact.supported_by[f_index]
+                    r_to_remove = supported_fact.supported_by[f_index + 1]
+                    supported_fact.supported_by.remove(f_to_remove)
+                    supported_fact.supported_by.remove(r_to_remove)
+                    if not supported_fact.supported_by and not supported_fact.asserted:
+                        self.facts.remove(supported_fact)
+
+                for supported_rule in f.supports_rules:
+                    r_index = supported_rule.supported_by.index(f)
+                    f_to_remove = supported_rule.supported_by[r_index]
+                    r_to_remove = supported_rule.supported_by[r_index + 1]
+                    supported_rule.supported_by.remove(f_to_remove)
+                    supported_rule.supported_by.remove(r_to_remove)
+                    if not supported_rule.supported_by and not supported_rule.asserted:
+                        self.facts.remove(supported_rule)
+
+                self.facts.remove(fact_or_rule)
         
 
 class InferenceEngine(object):
@@ -146,3 +168,21 @@ class InferenceEngine(object):
             [fact.statement, rule.lhs, rule.rhs])
         ####################################################
         # Student code goes here
+        to_check = rule.lhs[0]
+        res = match(to_check, fact.statement)
+        if res:
+            if len(rule.lhs) == 1:
+                new_fact_statement = instantiate(rule.rhs, res)
+                new_fact = Fact(new_fact_statement, supported_by=[fact, rule])
+                fact.supports_facts.append(new_fact)
+                rule.supports_facts.append(new_fact)
+                kb.kb_add(new_fact)
+            else:
+                new_lhs = []
+                for conds in rule.lhs[1:]:
+                    new_lhs.append(instantiate(conds, res))
+                new_rhs = instantiate(rule.rhs, res)
+                new_rule = Rule([new_lhs, new_rhs], supported_by=[fact, rule])
+                fact.supports_rules.append(new_rule)
+                rule.supports_rules.append(new_rule)
+                kb.kb_add(new_rule)
