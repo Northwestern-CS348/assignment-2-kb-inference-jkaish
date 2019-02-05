@@ -134,6 +134,7 @@ class KnowledgeBase(object):
                 f.asserted = False
                 if not f.supported_by:
                     for supported_fact in f.supports_facts:
+                        supported_fact = self._get_fact(supported_fact)
                         f_index = supported_fact.supported_by.index(f)
                         f_to_remove = supported_fact.supported_by[f_index]
                         r_to_remove = supported_fact.supported_by[f_index + 1]
@@ -142,8 +143,8 @@ class KnowledgeBase(object):
                         if not supported_fact.supported_by and not supported_fact.asserted:
                             for ff in supported_fact.supports_facts:
                                 self.kb_retract(ff)
-                            for rr in supported_fact.supports_rules:
-                                self.kb_retract(rr)
+                            # for rr in supported_fact.supports_rules:
+                            #     self.remove_rule(rr)
                             self.facts.remove(supported_fact)
 
                     for supported_rule in f.supports_rules:
@@ -155,11 +156,30 @@ class KnowledgeBase(object):
                         if not supported_rule.supported_by and not supported_rule.asserted:
                             for ff in supported_rule.supports_facts:
                                 self.kb_retract(ff)
-                            for rr in supported_rule.supports_rules:
-                                self.kb_retract(rr)
-                            self.rules.remove(supported_rule)
+                            # for rr in supported_rule.supports_rules:
+                            #     self.remove_rule(rr)
+                            # self.rules.remove(supported_rule)
+                    for rule in self.rules:
+                        self.remove_rule(rule)
 
                     self.facts.remove(f)
+            elif not f.supported_by:
+                self.facts.remove(f)
+
+    def remove_rule(self, rule):
+        r = self._get_rule(rule)
+        if r and not r.asserted and not r.supported_by:
+            for ff in r.supports_facts:
+                ff = self._get_fact(ff)
+                r_index = ff.supported_by.index(r)
+                f_to_remove = ff.supported_by[r_index - 1]
+                r_to_remove = ff.supported_by[r_index]
+                ff.supported_by.remove(f_to_remove)
+                ff.supported_by.remove(r_to_remove)
+                self.kb_retract(ff)
+            for rr in r.supports_rules:
+                self.remove_rule(rr)
+            self.rules.remove(r)
         
 
 class InferenceEngine(object):
